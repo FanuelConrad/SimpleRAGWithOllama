@@ -29,7 +29,7 @@ ollama pull nomic-embed-text:latest
 
 ### 3. Clone the Repository
 ```sh
-git clone <repository-url>
+git clone https://github.com/KsiProgramming/SimpleRAGWithOllama
 cd SimpleRAGWithOllama
 ```
 
