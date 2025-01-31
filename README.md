@@ -11,7 +11,7 @@ This project is a simple Retrieval-Augmented Generation (RAG) console applicatio
 - Provides **interactive console-based chat** with a document-based knowledge base.
 
 ## Prerequisites
-- [.NET 7.0+](https://dotnet.microsoft.com/en-us/download/dotnet)
+- [.NET 9.0+](https://dotnet.microsoft.com/en-us/download/dotnet)
 - [Ollama](https://ollama.com) installed and running locally
 - Ollama server running on `http://localhost:11434/`
 - A text file (`Data/Persons.txt`) to be indexed for retrieval
