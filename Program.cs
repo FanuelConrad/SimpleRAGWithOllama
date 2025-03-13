@@ -25,9 +25,8 @@ namespace SimpleRAGWithOllama
                 })
                 .WithCustomTextPartitioningOptions(new TextPartitioningOptions()
                 {
-                    MaxTokensPerLine = 50,
                     MaxTokensPerParagraph = 20,
-                    OverlappingTokens = 50
+                    OverlappingTokens = 10
                 });
 
             var memory = memoryBuilder.Build();
