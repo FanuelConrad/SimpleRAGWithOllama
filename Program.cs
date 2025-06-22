@@ -42,7 +42,7 @@ namespace SimpleRAGWithOllama
             }
 
             var pdfFiles = Directory
-                .GetFiles("C:/Users/conra/Documents/Github/SimpleRAGWithOllama/Data", "*.pdf")
+                .GetFiles("Data", "*.pdf")
                 .Where(f => Path.GetFileName(f).IndexOf("Callout", StringComparison.OrdinalIgnoreCase) >= 0)
                 .ToArray();
             var documentIDs = new List<string>();
