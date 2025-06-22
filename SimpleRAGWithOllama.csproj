@@ -8,18 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Data\Persons.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Data\Persons.txt">
+    <Content Include="Data\*.pdf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.KernelMemory" Version="0.97.250211.1" />
-    <PackageReference Include="Microsoft.KernelMemory.AI.Ollama" Version="0.97.250211.1" />
+    <PackageReference Include="Microsoft.KernelMemory" Version="0.98.250508.3" />
+    <PackageReference Include="Microsoft.KernelMemory.AI.Ollama" Version="0.98.250508.3" />
   </ItemGroup>
 
 </Project>

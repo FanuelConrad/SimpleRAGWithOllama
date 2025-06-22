@@ -7,11 +7,13 @@ namespace SimpleRAGWithOllama
 {
     internal class Program
     {
+        private const int MAX_CONCURRENT_PROCESSING = 3; // Control parallel processing
+
         static async Task Main(string[] args)
         {
             var ollamaConfig = new OllamaConfig()
             {
-                TextModel = new OllamaModelConfig("mistral:latest") { MaxTokenTotal = 125000, Seed = 42, TopK = 7 },
+                TextModel = new OllamaModelConfig("gemma:2b") { MaxTokenTotal = 8192, Seed = 42, TopK = 7 },
                 EmbeddingModel = new OllamaModelConfig("nomic-embed-text:latest") { MaxTokenTotal = 2048 },
                 Endpoint = "http://localhost:11434/"
             };
@@ -25,8 +27,8 @@ namespace SimpleRAGWithOllama
                 })
                 .WithCustomTextPartitioningOptions(new TextPartitioningOptions()
                 {
-                    MaxTokensPerParagraph = 20,
-                    OverlappingTokens = 10
+                    MaxTokensPerParagraph = 1024,    // Increased for better context
+                    OverlappingTokens = 128           // Maintained for context continuity
                 });
 
             var memory = memoryBuilder.Build();
@@ -39,16 +41,41 @@ namespace SimpleRAGWithOllama
                 await memory.DeleteIndexAsync(index);
             }
 
-            var document = new Document().AddFiles(["Data/Persons.txt"]);
+            var pdfFiles = Directory
+                .GetFiles("C:/Users/conra/Documents/Github/SimpleRAGWithOllama/Data", "*.pdf")
+                .Where(f => Path.GetFileName(f).IndexOf("Callout", StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToArray();
+            var documentIDs = new List<string>();
+            var semaphore = new SemaphoreSlim(MAX_CONCURRENT_PROCESSING);
 
-            var documentID = await memory.ImportDocumentAsync(document, index: index);
+            // Process files in parallel with controlled concurrency
+            var processingTasks = pdfFiles.Select(async file =>
+            {
+                try
+                {
+                    await semaphore.WaitAsync();
+                    Console.WriteLine($"Processing file: {Path.GetFileName(file)}");
+                    var document = new Document().AddFiles(new[] { file });
+                    var result = await memory.ImportDocumentAsync(document, index: index);
+                    documentIDs.Add(result);
+                    Console.WriteLine($"Successfully processed: {Path.GetFileName(file)}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing {Path.GetFileName(file)}: {ex.Message}");
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
 
-            var memoryFilter = MemoryFilters.ByDocument(documentID);
+            await Task.WhenAll(processingTasks);
 
             var chatHistory = new ChatHistory();
             Console.WriteLine("You can exit the console by tapping 'Exit'.");
-            Console.WriteLine("First Question: When was Ethan Carter born?");
-            var userInput = "When was Ethan Carter born?";
+            Console.WriteLine("First Question: Summarize the reports?");
+            var userInput = "Summarize the reports?";
 
             while (userInput != "Exit")
             {
@@ -57,17 +84,23 @@ namespace SimpleRAGWithOllama
                     continue;
                 }
 
-                var conversationContext = chatHistory.GetHistoryAsContext();
-                var fullQuery = ComposeQuery(userInput, conversationContext);
-                var answer = await memory.AskAsync(
-                    fullQuery,
-                    index,
-                    memoryFilter,
-                    minRelevance: .6f);
+                try
+                {
+                    var conversationContext = chatHistory.GetHistoryAsContext();
+                    var fullQuery = ComposeQuery(userInput, conversationContext);
+                    var answer = await memory.AskAsync(
+                        fullQuery,
+                        index,
+                        minRelevance: .3f);
 
-                chatHistory.AddUserMessage(userInput);
-                chatHistory.AddAssistantMessage(answer.Result);
-                Console.WriteLine(answer.Result);
+                    chatHistory.AddUserMessage(userInput);
+                    chatHistory.AddAssistantMessage(answer.Result);
+                    Console.WriteLine(answer.Result);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing query: {ex.Message}");
+                }
 
                 Console.WriteLine("Please Ask your question");
                 userInput = Console.ReadLine();
